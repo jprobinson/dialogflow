@@ -53,27 +53,16 @@ type FulfillmentRequest struct {
 	Timestamp time.Time `json:"timestamp"`
 	Lang      string    `json:"lang"`
 	Result    struct {
-		Source           string `json:"source"`
-		ResolvedQuery    string `json:"resolvedQuery"`
-		Speech           string `json:"speech"`
-		Action           string `json:"action"`
-		ActionIncomplete bool   `json:"actionIncomplete"`
-		Parameters       struct {
-			SubwayStop      string `json:"subway-stop"`
-			SubwayLine      string `json:"subway-line"`
-			SubwayDirection string `json:"subway-direction"`
-		} `json:"parameters"`
-		Contexts []struct {
-			Name       string `json:"name"`
-			Parameters struct {
-				SubwayStop              string `json:"subway-stop"`
-				SubwayStopOriginal      string `json:"subway-stop.original"`
-				SubwayDirectionOriginal string `json:"subway-direction.original"`
-				SubwayLineOriginal      string `json:"subway-line.original"`
-				SubwayLine              string `json:"subway-line"`
-				SubwayDirection         string `json:"subway-direction"`
-			} `json:"parameters"`
-			Lifespan int `json:"lifespan"`
+		Source           string                 `json:"source"`
+		ResolvedQuery    string                 `json:"resolvedQuery"`
+		Speech           string                 `json:"speech"`
+		Action           string                 `json:"action"`
+		ActionIncomplete bool                   `json:"actionIncomplete"`
+		Parameters       map[string]interface{} `json:"parameters"`
+		Contexts         []struct {
+			Name       string                 `json:"name"`
+			Parameters map[string]interface{} `json:"parameters"`
+			Lifespan   int                    `json:"lifespan"`
 		} `json:"contexts"`
 		Metadata struct {
 			MatchedParameters []struct {
