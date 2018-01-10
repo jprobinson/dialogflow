@@ -3,10 +3,16 @@ package dialogflow
 import "time"
 
 type FulfillmentResponse struct {
-	Speech      string              `json:"speech,omitempty"`
-	DisplayText string              `json:"displayText,omitempty"`
-	Source      string              `json:"source,omitempty"`
-	ContextOut  []map[string]string `json:"contextOut"`
+	Speech        string              `json:"speech,omitempty"`
+	DisplayText   string              `json:"displayText,omitempty"`
+	Source        string              `json:"source,omitempty"`
+	ContextOut    []map[string]string `json:"contextOut"`
+	FollowUpEvent *FollowUpEvent      `json:"followupEvent"`
+}
+
+type FollowUpEvent struct {
+	Name string                 `json:"name"`
+	Data map[string]interface{} `json:"data"`
 }
 
 type FulfillmentRequest struct {
