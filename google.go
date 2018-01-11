@@ -1,21 +1,60 @@
 package dialogflow
 
-import "time"
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"time"
+)
 
-type FulfillmentResponse struct {
-	Speech        string              `json:"speech,omitempty"`
-	DisplayText   string              `json:"displayText,omitempty"`
-	Source        string              `json:"source,omitempty"`
-	ContextOut    []map[string]string `json:"contextOut"`
-	FollowUpEvent *FollowUpEvent      `json:"followupEvent"`
+type (
+	// GoogleActionServer returns a GoogleActionHandler for each action in their
+	// Google Action's DialogFlow.
+	GoogleActionServer interface {
+		// action name => handler
+		Actions() map[string]GoogleActionHandler
+	}
+
+	// GoogleActionHandler encapsulates the logic for a single action for a Google
+	// Action keyed by action name.
+	// For more information about the request and response, see the DialogFlow
+	// documentation for fulfillment: https://dialogflow.com/docs/fulfillment
+	GoogleActionHandler func(context.Context, *GoogleRequest) (*GoogleFulfillmentResponse, error)
+)
+
+func (s service) postGoogle(ctx context.Context, req interface{}) (interface{}, error) {
+	r, ok := req.(*GoogleRequest)
+	if !ok {
+		return nil, errBadRequest
+	}
+	handler, ok := s.google[r.Result.Action]
+	if !ok {
+		return nil, errBadRequest
+	}
+	return handler(ctx, r)
 }
 
-type FollowUpEvent struct {
-	Name string                 `json:"name"`
-	Data map[string]interface{} `json:"data"`
+func decodeGoogle(ctx context.Context, r *http.Request) (interface{}, error) {
+	var req GoogleRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		return nil, errBadRequest
+	}
+	return &req, nil
 }
 
-type FulfillmentRequest struct {
+// GoogleFulfillmentResponse is the response DialogFlow expects for Google Actions.
+// More information here: https://dialogflow.com/docs/fulfillment#response
+type GoogleFulfillmentResponse struct {
+	Speech      string                   `json:"speech,omitempty"`
+	DisplayText string                   `json:"displayText,omitempty"`
+	Source      string                   `json:"source,omitempty"`
+	ContextOut  []map[string]interface{} `json:"contextOut"`
+}
+
+// GoogleRequest contains the information of an incoming DialogFlow request from Google
+// Actions.
+type GoogleRequest struct {
 	OriginalRequest struct {
 		Source  string `json:"source"`
 		Version string `json:"version"`
