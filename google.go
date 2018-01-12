@@ -8,9 +8,9 @@ import (
 )
 
 type (
-	// GoogleActionServer returns a GoogleActionHandler for each action in their
+	// GoogleActionService returns a GoogleActionHandler for each action in their
 	// Google Action's DialogFlow.
-	GoogleActionServer interface {
+	GoogleActionService interface {
 		// action name => handler
 		Actions() map[string]GoogleActionHandler
 	}
