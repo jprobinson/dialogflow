@@ -16,7 +16,7 @@ type (
 	}
 
 	// GoogleActionHandler encapsulates the logic for a single action for a Google
-	// Action keyed by action name.
+	// Actio.
 	// For more information about the request and response, see the DialogFlow
 	// documentation for fulfillment: https://dialogflow.com/docs/fulfillment
 	GoogleActionHandler func(context.Context, *GoogleRequest) (*GoogleFulfillmentResponse, error)

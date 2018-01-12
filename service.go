@@ -14,6 +14,8 @@ type service struct {
 	middleware endpoint.Middleware
 }
 
+// Init will register a service with marvin and Google App Engine.
+// Call this in your init function or main function just before appengine.Main.
 func Init(google GoogleActionService, middleware endpoint.Middleware) {
 	marvin.Init(&service{google: google.Actions(), middleware: middleware})
 }
