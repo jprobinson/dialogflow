@@ -4,4 +4,4 @@
 
 Built with [go-kit](https://github.com/go-kit/kit) and [NYTimes/marvin](https://github.com/NYTimes/marvin).
 
-For an example of this framework in action, check out (NYC Train Time)[https://github.com/jprobinson/nyc-train-time].
+For an example of this framework in action, check out [NYC Train Time](https://github.com/jprobinson/nyc-train-time).
