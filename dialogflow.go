@@ -3,6 +3,8 @@ package dialogflow
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/NYTimes/gizmo/server/kit"
@@ -47,6 +49,27 @@ func decode(ctx context.Context, r *http.Request) (interface{}, error) {
 	}
 	defer r.Body.Close()
 	return &req, nil
+}
+func (r *Request) GetParam(name string) (interface{}, error) {
+	val, ok := r.QueryResult.Parameters[name]
+	if !ok {
+		return nil, errors.New("param not found")
+	}
+	return val, nil
+}
+
+func (r *Request) GetStringParam(name string) (string, error) {
+	val, err := r.GetParam(name)
+	if err != nil {
+		return "", err
+	}
+
+	str, ok := val.(string)
+	if !ok {
+		return "", fmt.Errorf("param is of type %T, not string", val)
+	}
+
+	return str, nil
 }
 
 // Request contains all the inbound information from a Dialogflow fulfillment request.
