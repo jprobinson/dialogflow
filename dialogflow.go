@@ -50,6 +50,9 @@ func decode(ctx context.Context, r *http.Request) (interface{}, error) {
 	defer r.Body.Close()
 	return &req, nil
 }
+
+// GetParam is a convenience method for getting a parameter from QueryResult.Parameters.
+// If the parameter does not exist, an error will be returned.
 func (r *Request) GetParam(name string) (interface{}, error) {
 	val, ok := r.QueryResult.Parameters[name]
 	if !ok {
@@ -58,6 +61,8 @@ func (r *Request) GetParam(name string) (interface{}, error) {
 	return val, nil
 }
 
+// GetStringParam is a convenience method for getting a parameter from QueryResult.Parameters.
+// If the parameter does not exist or is not a string, an error will be returned.
 func (r *Request) GetStringParam(name string) (string, error) {
 	val, err := r.GetParam(name)
 	if err != nil {
@@ -88,8 +93,12 @@ type Request struct {
 			Surface     struct {
 				Capabilities []interface{} `json:"capabilities"`
 			} `json:"surface"`
-			Inputs            []interface{} `json:"inputs"`
-			User              interface{}   `json:"user"`
+			Inputs []interface{} `json:"inputs"`
+			User   struct {
+				UserID   string `json:"userId"`
+				Locale   string `json:"locale"`
+				LastSeen string `json:"lastSeen"`
+			} `json:"user"`
 			Conversation      interface{}   `json:"conversation"`
 			AvailableSurfaces []interface{} `json:"availableSurfaces"`
 		} `json:"payload"`
