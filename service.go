@@ -4,8 +4,11 @@ package dialogflow
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
+	"github.com/NYTimes/gizmo/auth"
+	"github.com/NYTimes/gizmo/auth/gcp"
 	"github.com/NYTimes/gizmo/server/kit"
 	"github.com/go-kit/kit/endpoint"
 	httptransport "github.com/go-kit/kit/transport/http"
@@ -15,6 +18,7 @@ import (
 type service struct {
 	intents    map[string]IntentHandler
 	middleware endpoint.Middleware
+	verifier   *auth.Verifier
 }
 
 // Run will register a service with kit and run the server. Call this in your main
@@ -23,8 +27,27 @@ type service struct {
 // The service will register the webhook on the path "/fulfillment" so make sure to
 // configure your fulfillment webhook to point at something like:
 // https://example.appspot.com/fulfillment
-func Run(svc FulfillmentService) error {
-	return kit.Run(&service{intents: svc.Intents(), middleware: svc.Middleware})
+func Run(svc FulfillmentService, audience string) error {
+	var verifier *auth.Verifier
+	if audience != "" {
+		ctx := context.Background()
+		ks, err := gcp.NewIdentityPublicKeySource(ctx, gcp.IdentityConfig{})
+		if err != nil {
+			return fmt.Errorf("unable to init auth key source: %w", err)
+		}
+
+		verifier = auth.NewVerifier(ks, gcp.IdentityClaimsDecoderFunc,
+			gcp.IdentityVerifyFunc(func(ctx context.Context, cs gcp.IdentityClaimSet) bool {
+				kit.Logger(ctx).Log("CLAIMS", cs)
+				return gcp.ValidIdentityClaims(cs, audience)
+			}))
+	}
+
+	return kit.Run(&service{
+		intents:    svc.Intents(),
+		middleware: svc.Middleware,
+		verifier:   verifier,
+	})
 }
 
 func (s *service) HTTPOptions() []httptransport.ServerOption {
@@ -40,7 +63,38 @@ func (s *service) HTTPRouterOptions() []kit.RouterOption {
 }
 
 func (s *service) HTTPMiddleware(h http.Handler) http.Handler {
-	return h
+	if s.verifier == nil {
+		return h
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, err := auth.GetAuthorizationToken(r)
+		if err != nil {
+			h.ServeHTTP(w, r)
+			return
+		}
+
+		verified, err := s.verifier.Verify(r.Context(), token)
+		if err != nil {
+			h.ServeHTTP(w, r)
+			return
+		}
+
+		// token existed but was invalid, forbid these requests
+		if !verified {
+			h.ServeHTTP(w, r)
+			return
+		}
+
+		claims, err := decodeClaims(token)
+		if err != nil {
+			h.ServeHTTP(w, r)
+			return
+		}
+
+		// add the user claims to the context and call the handlers below
+		r = r.WithContext(context.WithValue(r.Context(), claimsKey, claims))
+		h.ServeHTTP(w, r)
+	})
 }
 
 func (s *service) Middleware(ep endpoint.Endpoint) endpoint.Endpoint {
