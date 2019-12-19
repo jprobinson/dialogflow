@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/NYTimes/gizmo/server/kit"
@@ -42,7 +43,17 @@ func (s service) post(ctx context.Context, req interface{}) (interface{}, error)
 
 func decode(ctx context.Context, r *http.Request) (interface{}, error) {
 	var req Request
-	err := json.NewDecoder(r.Body).Decode(&req)
+	bod, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		kit.LogErrorMsg(ctx, err, "unable to read request")
+		return nil, errBadRequest
+	}
+	kit.Logger(ctx).Log("request", string(bod))
+
+	/*
+		err := json.NewDecoder(r.Body).Decode(&req)
+	*/
+	err = json.Unmarshal(bod, &req)
 	if err != nil {
 		kit.LogErrorMsg(ctx, err, "unable to parse request")
 		return nil, errBadRequest
