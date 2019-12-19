@@ -63,12 +63,7 @@ func (s *service) HTTPRouterOptions() []kit.RouterOption {
 }
 
 func (s *service) HTTPMiddleware(h http.Handler) http.Handler {
-	if s.verifier == nil {
-		return h
-	}
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-	})
+	return h
 }
 
 func (s *service) Middleware(ep endpoint.Endpoint) endpoint.Endpoint {
