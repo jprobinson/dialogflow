@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/NYTimes/gizmo/server/kit"
@@ -41,24 +40,36 @@ func (s service) post(ctx context.Context, req interface{}) (interface{}, error)
 	return handler(ctx, r)
 }
 
-func decode(ctx context.Context, r *http.Request) (interface{}, error) {
+func (s *service) decode(ctx context.Context, r *http.Request) (interface{}, error) {
 	var req Request
-	bod, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		kit.LogErrorMsg(ctx, err, "unable to read request")
-		return nil, errBadRequest
-	}
-	kit.Logger(ctx).Log("request", string(bod))
-
-	/*
-		err := json.NewDecoder(r.Body).Decode(&req)
-	*/
-	err = json.Unmarshal(bod, &req)
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		kit.LogErrorMsg(ctx, err, "unable to parse request")
 		return nil, errBadRequest
 	}
 	defer r.Body.Close()
+
+	if s.verifier == nil {
+		return &req, nil
+	}
+
+	// check if users are logged in!
+	verified, err := s.verifier.Verify(ctx,
+		req.OriginalDetectIntentRequest.Payload.User.IDToken)
+	if err != nil || !verified {
+		kit.LogErrorMsg(ctx, err, "token not valid")
+		return &req, nil
+	}
+
+	claims, err := decodeClaims(req.OriginalDetectIntentRequest.Payload.User.IDToken)
+	if err != nil {
+		kit.LogErrorMsg(ctx, err, "unable to decode claims")
+		return &req, nil
+
+	}
+
+	req.OriginalDetectIntentRequest.Payload.User.UserID = claims.Sub
+	req.OriginalDetectIntentRequest.Payload.User.Email = claims.Email
 	return &req, nil
 }
 
@@ -106,9 +117,14 @@ type Request struct {
 			} `json:"surface"`
 			Inputs []interface{} `json:"inputs"`
 			User   struct {
-				UserID   string `json:"userId"`
-				Locale   string `json:"locale"`
-				LastSeen string `json:"lastSeen"`
+				UserID     string `json:"userId"`
+				IDToken    string `json:"idToken"`
+				Email      string `json:"email"`
+				Name       string `json:"name"`
+				GivenName  string `json:"given_name"`
+				FamilyName string `json:"family_name"`
+				Locale     string `json:"locale"`
+				LastSeen   string `json:"lastSeen"`
 			} `json:"user"`
 			Conversation      interface{}   `json:"conversation"`
 			AvailableSurfaces []interface{} `json:"availableSurfaces"`

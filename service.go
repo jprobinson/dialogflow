@@ -67,36 +67,7 @@ func (s *service) HTTPMiddleware(h http.Handler) http.Handler {
 		return h
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, err := auth.GetAuthorizationToken(r)
-		if err != nil {
-			kit.LogErrorMsg(r.Context(), err, "token not found")
-			kit.Logger(r.Context()).Log("headers", r.Header)
-			h.ServeHTTP(w, r)
-			return
-		}
 
-		verified, err := s.verifier.Verify(r.Context(), token)
-		if err != nil {
-			kit.LogErrorMsg(r.Context(), err, "token not valid")
-			h.ServeHTTP(w, r)
-			return
-		}
-
-		// token existed but was invalid, forbid these requests
-		if !verified {
-			h.ServeHTTP(w, r)
-			return
-		}
-
-		claims, err := decodeClaims(token)
-		if err != nil {
-			h.ServeHTTP(w, r)
-			return
-		}
-
-		// add the user claims to the context and call the handlers below
-		r = r.WithContext(context.WithValue(r.Context(), claimsKey, claims))
-		h.ServeHTTP(w, r)
 	})
 }
 
@@ -109,7 +80,7 @@ func (s *service) HTTPEndpoints() map[string]map[string]kit.HTTPEndpoint {
 		"/fulfillment": {
 			"POST": {
 				Endpoint: s.post,
-				Decoder:  decode,
+				Decoder:  s.decode,
 			},
 		},
 	}
