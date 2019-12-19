@@ -70,6 +70,7 @@ func (s *service) decode(ctx context.Context, r *http.Request) (interface{}, err
 
 	req.OriginalDetectIntentRequest.Payload.User.UserID = claims.Sub
 	req.OriginalDetectIntentRequest.Payload.User.Email = claims.Email
+	kit.Logger(ctx).Log("requuest?", req)
 	return &req, nil
 }
 
