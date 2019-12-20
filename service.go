@@ -38,7 +38,6 @@ func Run(svc FulfillmentService, audience string) error {
 
 		verifier = auth.NewVerifier(ks, gcp.IdentityClaimsDecoderFunc,
 			gcp.IdentityVerifyFunc(func(ctx context.Context, cs gcp.IdentityClaimSet) bool {
-				kit.Logger(ctx).Log("CLAIMS", cs)
 				return gcp.ValidIdentityClaims(cs, audience)
 			}))
 	}
